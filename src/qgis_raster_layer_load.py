@@ -12,9 +12,14 @@
     
     Boolean variable values below control execution flow:
         
-          - dup_execute             (layer duplication)
-          - toggle_vis, recursive   (layer visibility)
-          - exclusive               (mutually exclusive visibility)
+          - dup_execute             (execution, layer duplication)
+          
+          - toggle_vis, recursive   (execution, layer visibility)
+          - visibility_on           (1 = visibility on, 0 = off)
+          - recursive               (1 = apply to all layers within groups & sub-groups)
+          
+          - exclusive               (execute, mutually exclusive visibility)
+          - exclusivity_on          (1 = exclusivity on, 0 = off)    
     
 """
 
@@ -30,12 +35,14 @@ sym_below = r'hillshade_BottomLayer.qml'
 # -----------
 # execute 
 # -----------
-dup_execute = 1  # toggle on/off executing layer duplication
+dup_execute = 1   # toggle on/off executing layer duplication
 
-toggle_vis = 1   # toggle on/off group and layer visibility
-recursive = 0   # toggle on/off for layers within sub-groups visibility
+toggle_vis = 1    # execute group and layer visibility
+visibility_on = 1 # toggle on/off
+recursive = 0     # ... layers within sub-groups visibility
 
-exclusive = 1    # toggle on/off "mutually exclusive" visibility
+exclusive = 1      # execute "mutually exclusive" visibility
+exclusivity_on = 1 # toggle on/off
 
 # --------
 # helpers
@@ -53,23 +60,23 @@ def collapse_groups(root):
         for subgroup in group.findGroups():
             subgroup.setExpanded(False)
         
-def set_exclusive(root, turn_on=True, rec=False):
+def set_exclusive(root, exclusive=exclusivity_on, rec=False):
     # set each group to be mutually exclusive
     for group in root.findGroups():
-        group.setIsMutuallyExclusive(turn_on)
+        group.setIsMutuallyExclusive(exclusive)
         
         # set sub-groups if 'rec' is True
         if rec:    
             for subgroup in group.findGroups():   
-                subgroup.setIsMutuallyExclusive(turn_on)
+                subgroup.setIsMutuallyExclusive(exclusive)
 
-def group_visibility(root, turn_on=False):
+def group_visibility(root, vis_on):
     # traverse the tree; toggle visibility of the second layer within each sub-group of the parent group
     for group in root.findGroups():
         for subgroup in group.findGroups():
             subgroup_layers = subgroup.findLayers()
             bottom_layer = subgroup_layers[1]
-            bottom_layer.setItemVisibilityChecked(turn_on)
+            bottom_layer.setItemVisibilityChecked(vis_on)
     
 # --- **note, assumes all layers are within a parent group; duplicates each layer, sub-groups the two layers, applies symbology from .qml
 def raster_dup(root, sym_above, sym_below):
@@ -118,8 +125,8 @@ if dup_execute:
 
 # visibility
 if toggle_vis:
-    group_visibility(root, turn_on=0)
+    group_visibility(root, vis_on=visibility_on)
             
 if exclusive:
-    set_exclusive(root, turn_on=1, rec=recursive)
+    set_exclusive(root, exclusive=exclusivity_on, rec=recursive)
 
